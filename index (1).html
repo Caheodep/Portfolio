@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>QUINT — Roblox Scripter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=Inter:wght@300;400&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #080808;
+      --dark: #0f0f0f;
+      --panel: #141414;
+      --border: #222;
+      --dim: #2a2a2a;
+      --muted: #555;
+      --mid: #888;
+      --text: #e8e4dc;
+      --white: #f5f2eb;
+      --green: #b8ff57;
+      --green-dim: #7aaa2e;
+    }
+
+    ::selection { background: var(--green); color: var(--black); }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      cursor: crosshair;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    .cursor {
+      position: fixed;
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: difference;
+    }
+
+    /* TOP BAR */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 32px;
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,8,8,0.92);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-left { display: flex; align-items: center; gap: 24px; }
+
+    .topbar-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--white);
+    }
+
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .topbar-nav { display: flex; list-style: none; }
+
+    .topbar-nav a {
+      display: block;
+      padding: 0 20px;
+      height: 48px;
+      line-height: 48px;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-left: 1px solid var(--border);
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .topbar-nav a:hover { color: var(--green); background: rgba(184,255,87,0.04); }
+
+    /* TICKER */
+    .ticker {
+      margin-top: 48px;
+      height: 36px;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .ticker-track {
+      display: flex;
+      animation: ticker 20s linear infinite;
+      white-space: nowrap;
+    }
+
+    .ticker-track span {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 3px;
+      color: var(--black);
+      padding: 0 40px;
+    }
+
+    .ticker-track span.dot { color: rgba(0,0,0,0.3); padding: 0; }
+
+    @keyframes ticker { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+    /* HERO */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: calc(100vh - 84px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-left {
+      padding: 64px 48px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-index { font-size: 10px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .hero-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(80px, 12vw, 156px);
+      line-height: 0.88;
+      letter-spacing: -1px;
+      color: var(--white);
+      margin: auto 0;
+    }
+
+    .hero-name span { color: var(--green); display: block; }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+    }
+
+    .hero-meta-item { background: var(--dark); padding: 16px; }
+    .hero-meta-label { font-size: 9px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; }
+    .hero-meta-value { font-size: 12px; color: var(--text); }
+
+    .hero-right {
+      padding: 64px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 32px;
+    }
+
+    .hero-desc {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--mid);
+      max-width: 400px;
+      margin-bottom: auto;
+      margin-top: 80px;
+    }
+
+    .hero-desc em { font-style: normal; color: var(--text); }
+
+    /* TERMINAL */
+    .terminal { background: var(--panel); border: 1px solid var(--border); overflow: hidden; }
+
+    .terminal-bar {
+      background: var(--dim);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .terminal-bar span { width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+    .terminal-bar span:first-child { background: #ff5f57; }
+    .terminal-bar span:nth-child(2) { background: #febc2e; }
+    .terminal-bar span:nth-child(3) { background: #28c840; }
+
+    .terminal-body { padding: 16px; font-size: 12px; line-height: 2; }
+    .t-line { display: flex; gap: 8px; }
+    .t-prompt { color: var(--green); }
+    .t-cmd { color: var(--text); }
+    .t-out { color: var(--muted); padding-left: 20px; display: block; }
+    .t-out.hi { color: var(--green-dim); }
+
+    .blink {
+      display: inline-block;
+      width: 8px; height: 14px;
+      background: var(--green);
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50%{opacity:0} }
+
+    .hero-scroll-hint {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hero-scroll-hint::after { content:''; display:block; width:40px; height:1px; background:var(--muted); }
+
+    /* SECTION */
+    .section { border-bottom: 1px solid var(--border); }
+
+    .section-label {
+      padding: 0 32px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section-label-num {
+      color: var(--green);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+
+    /* SKILLS */
+    .skills-row { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+    .skill-item {
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    .skill-item:last-child { border-right: none; }
+
+    .skill-item::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .skill-item:hover { background: var(--panel); }
+    .skill-item:hover::before { transform: scaleX(1); }
+
+    .skill-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--dim);
+      line-height: 1;
+      margin-bottom: 16px;
+      transition: color 0.3s;
+    }
+
+    .skill-item:hover .skill-num { color: var(--green); }
+
+    .skill-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .skill-body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    /* PROJECTS */
+    .projects-layout { display: grid; grid-template-columns: 2fr 1fr; }
+    .projects-main { border-right: 1px solid var(--border); }
+    .project-featured { border-bottom: 1px solid var(--border); }
+
+    .project-img-area {
+      width: 100%;
+      aspect-ratio: 16/8;
+      background: var(--panel);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    .project-img-area img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+    .project-img-area svg { opacity: 0.2; }
+    .project-img-area:hover { background: var(--dim); }
+
+    .project-img-label {
+      position: absolute;
+      bottom: 12px; right: 12px;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--black);
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+    }
+
+    .project-body { padding: 28px 32px; }
+
+    .project-tags { display: flex; gap: 6px; margin-bottom: 12px; }
+
+    .ptag {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      border: 1px solid var(--green-dim);
+      padding: 3px 8px;
+    }
+
+    .project-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .project-desc {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.8;
+      margin-bottom: 20px;
+      max-width: 500px;
+    }
+
+    .project-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .project-link:hover { color: var(--green); }
+    .project-link span { display:inline-block; transition: transform 0.2s; }
+    .project-link:hover span { transform: translateX(4px); }
+
+    .projects-side { display: flex; flex-direction: column; }
+
+    .side-project {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .side-project:hover { background: var(--panel); }
+    .side-project:last-child { border-bottom: none; }
+
+    .side-project-num { font-family:'Bebas Neue',sans-serif; font-size:11px; color:var(--muted); letter-spacing:1px; }
+    .side-project-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; color:var(--white); }
+    .side-project-desc { font-family:'Inter',sans-serif; font-weight:300; font-size:11px; color:var(--muted); line-height:1.7; }
+    .side-project-tag { font-size:9px; color:var(--green-dim); letter-spacing:.1em; text-transform:uppercase; margin-top:auto; }
+
+    /* VIDEOS */
+    .videos-grid { display: grid; grid-template-columns: repeat(2,1fr); }
+    .video-card { border-right: 1px solid var(--border); }
+    .video-card:nth-child(2) { border-right: none; }
+
+    .video-frame {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
+    .video-frame svg { opacity: 0.2; }
+
+    .video-meta { padding: 20px 28px; }
+    .video-num { font-family:'Bebas Neue',sans-serif; font-size:11px; color:var(--muted); letter-spacing:1px; margin-bottom:4px; }
+    .video-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:.5px; color:var(--white); margin-bottom:6px; }
+    .video-desc { font-family:'Inter',sans-serif; font-weight:300; font-size:12px; color:var(--muted); }
+
+    /* CONTACT */
+    .contact-grid { display: grid; grid-template-columns: repeat(3,1fr); }
+
+    .contact-card {
+      padding: 48px 32px;
+      border-right: 1px solid var(--border);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contact-card:last-child { border-right: none; }
+
+    .contact-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--green);
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+
+    .contact-card:hover { background: var(--panel); }
+    .contact-card:hover::after { opacity: 1; }
+
+    .contact-platform { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+    .contact-handle { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1px; color:var(--white); }
+    .contact-sub { font-family:'Inter',sans-serif; font-weight:300; font-size:12px; color:var(--muted); }
+
+    .contact-arrow {
+      margin-top: auto;
+      font-size: 20px;
+      color: var(--green);
+      opacity: 0;
+      transform: translateX(-8px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .contact-card:hover .contact-arrow { opacity: 1; transform: none; }
+
+    /* FOOTER */
+    footer {
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .footer-green { color: var(--green); }
+
+    /* REVEAL */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+
+    [data-reveal].revealed { opacity: 1; transform: none; }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-left { border-right: none; border-bottom: 1px solid var(--border); padding: 48px 24px; }
+      .hero-right { padding: 40px 24px; }
+      .skills-row { grid-template-columns: 1fr 1fr; }
+      .skill-item:nth-child(2) { border-right: none; }
+      .projects-layout { grid-template-columns: 1fr; }
+      .projects-main { border-right: none; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .contact-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .videos-grid { grid-template-columns: 1fr; }
+      .video-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .topbar-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<nav class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">QUINT</div>
+    <div class="topbar-status">
+      <div class="status-dot"></div>
+      Available for work
+    </div>
+  </div>
+  <ul class="topbar-nav">
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#videos">Videos</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<div class="ticker">
+  <div class="ticker-track">
+    <span>LUA SCRIPTER</span><span class="dot">✦</span>
+    <span>ROBLOX DEVELOPER</span><span class="dot">✦</span>
+    <span>GAME SYSTEMS</span><span class="dot">✦</span>
+    <span>CLEAN CODE</span><span class="dot">✦</span>
+    <span>OPEN FOR COMMISSIONS</span><span class="dot">✦</span>
+    <span>QUINT</span><span class="dot">✦</span>
+    <span>LUA SCRIPTER</span><span class="dot">✦</span>
+    <span>ROBLOX DEVELOPER</span><span class="dot">✦</span>
+    <span>GAME SYSTEMS</span><span class="dot">✦</span>
+    <span>CLEAN CODE</span><span class="dot">✦</span>
+    <span>OPEN FOR COMMISSIONS</span><span class="dot">✦</span>
+    <span>QUINT</span><span class="dot">✦</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-index">001 / INTRO</div>
+    <div class="hero-name">QUINT<span>.</span></div>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Role</div>
+        <div class="hero-meta-value">Lua Scripter</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Platform</div>
+        <div class="hero-meta-value">Roblox Studio</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Status</div>
+        <div class="hero-meta-value" style="color:var(--green)">● Available</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="hero-meta-label">Focus</div>
+        <div class="hero-meta-value">Game Systems</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <p class="hero-desc">
+      I write <em>clean, scalable Lua</em> for Roblox experiences —
+      from combat systems and datastores to full game frameworks.
+      Code that performs, logic that holds up.
+    </p>
+    <div class="terminal">
+      <div class="terminal-bar"><span></span><span></span><span></span></div>
+      <div class="terminal-body">
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> whoami</span></div>
+        <span class="t-out hi">quint — roblox lua developer</span>
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> skills --list</span></div>
+        <span class="t-out">OOP · RemoteEvents · DataStore · Pathfinding</span>
+        <span class="t-out">ModuleScripts · HTTP API · Custom Frameworks</span>
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> status</span></div>
+        <span class="t-out hi">open for commissions ✓</span>
+        <div class="t-line"><span class="t-prompt">~$</span><span class="t-cmd"> <span class="blink"></span></span></div>
+      </div>
+    </div>
+    <div class="hero-scroll-hint">Scroll to explore</div>
+  </div>
+</div>
+
+<!-- SKILLS -->
+<div class="section" id="skills">
+  <div class="section-label">
+    <span class="section-label-num">002</span>
+    Skills & Expertise
+  </div>
+  <div class="skills-row" data-reveal>
+    <div class="skill-item">
+      <div class="skill-num">01</div>
+      <div class="skill-title">Lua Scripting</div>
+      <div class="skill-body">Server-side, client-side, and ModuleScript architecture. OOP patterns, clean separation of concerns.</div>
+    </div>
+    <div class="skill-item">
+      <div class="skill-num">02</div>
+      <div class="skill-title">Game Systems</div>
+      <div class="skill-body">Combat, inventory, currency, quests, leaderboards. Full-stack game logic from scratch.</div>
+    </div>
+    <div class="skill-item">
+      <div class="skill-num">03</div>
+      <div class="skill-title">Data & Storage</div>
+      <div class="skill-body">DataStore2, ProfileService, session locking. Player data that saves reliably at scale.</div>
+    </div>
+    <div class="skill-item">
+      <div class="skill-num">04</div>
+      <div class="skill-title">Performance</div>
+      <div class="skill-body">Optimized loops, event-driven architecture, minimal replication. Games that run smooth.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div class="section" id="projects">
+  <div class="section-label">
+    <span class="section-label-num">003</span>
+    Projects
+  </div>
+  <div class="projects-layout">
+    <div class="projects-main">
+
+      <div class="project-featured" data-reveal>
+        <!-- TO ADD IMAGE: replace the div.project-img-area content with <img src="yourfile.jpg"> -->
+        <div class="project-img-area">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:0 20px;">Replace this div's content with &lt;img src="screenshot.jpg"&gt;</span>
+          <div class="project-img-label">Featured</div>
+        </div>
+        <div class="project-body">
+          <div class="project-tags"><span class="ptag">Scripting</span><span class="ptag">Systems</span></div>
+          <div class="project-title">Your Project Name</div>
+          <p class="project-desc">Describe what you built — the systems, the gameplay, what you're proud of technically. Be specific.</p>
+          <a href="#" class="project-link">View on Roblox <span>→</span></a>
+        </div>
+      </div>
+
+      <div data-reveal>
+        <div class="project-img-area" style="aspect-ratio:16/7;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="1"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;">Add screenshot</span>
+        </div>
+        <div class="project-body">
+          <div class="project-tags"><span class="ptag">DataStore</span><span class="ptag">Multiplayer</span></div>
+          <div class="project-title">Second Project</div>
+          <p class="project-desc">What technical challenge did you solve here?</p>
+          <a href="#" class="project-link">View on Roblox <span>→</span></a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="projects-side" data-reveal>
+      <div class="side-project">
+        <div class="side-project-num">P — 03</div>
+        <div class="side-project-title">Side Project</div>
+        <div class="side-project-desc">Short description of this project and what you built.</div>
+        <div class="side-project-tag">Lua · Systems</div>
+      </div>
+      <div class="side-project">
+        <div class="side-project-num">P — 04</div>
+        <div class="side-project-title">Another Project</div>
+        <div class="side-project-desc">Short description of this project and what you built.</div>
+        <div class="side-project-tag">Scripting · UI</div>
+      </div>
+      <div class="side-project">
+        <div class="side-project-num">P — 05</div>
+        <div class="side-project-title">Another Project</div>
+        <div class="side-project-desc">Short description of this project and what you built.</div>
+        <div class="side-project-tag">Framework · API</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIDEOS -->
+<div class="section" id="videos">
+  <div class="section-label">
+    <span class="section-label-num">004</span>
+    Showcase Videos
+  </div>
+  <div class="videos-grid">
+    <!-- TO ADD VIDEO: replace .video-frame content with:
+         <iframe src="https://www.youtube.com/embed/YOUR_VIDEO_ID" allowfullscreen></iframe>  -->
+    <div class="video-card" data-reveal>
+      <div class="video-frame">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none" opacity="0.4"/></svg>
+        <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;">Paste YouTube embed here</span>
+      </div>
+      <div class="video-meta">
+        <div class="video-num">V — 01</div>
+        <div class="video-title">Video Title</div>
+        <div class="video-desc">What does this showcase?</div>
+      </div>
+    </div>
+    <div class="video-card" data-reveal>
+      <div class="video-frame">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4V8z" fill="currentColor" stroke="none" opacity="0.4"/></svg>
+        <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;">Paste YouTube embed here</span>
+      </div>
+      <div class="video-meta">
+        <div class="video-num">V — 02</div>
+        <div class="video-title">Video Title</div>
+        <div class="video-desc">What does this showcase?</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="section" id="contact">
+  <div class="section-label">
+    <span class="section-label-num">005</span>
+    Get in Touch
+  </div>
+  <div class="contact-grid" data-reveal>
+    <a href="https://roblox.com" class="contact-card" target="_blank">
+      <div class="contact-platform">Roblox Profile</div>
+      <div class="contact-handle">ROBLOX</div>
+      <div class="contact-sub">roblox.com/users/yourprofile</div>
+      <div class="contact-arrow">↗</div>
+    </a>
+    <a href="#" class="contact-card">
+      <div class="contact-platform">Discord</div>
+      <div class="contact-handle">DISCORD</div>
+      <div class="contact-sub">Quint#0000 — DM for commissions</div>
+      <div class="contact-arrow">↗</div>
+    </a>
+    <a href="https://devforum.roblox.com" class="contact-card" target="_blank">
+      <div class="contact-platform">DevForum</div>
+      <div class="contact-handle">DEVFORUM</div>
+      <div class="contact-sub">devforum.roblox.com/u/Quint</div>
+      <div class="contact-arrow">↗</div>
+    </a>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 <span class="footer-green">QUINT</span></span>
+  <span>Roblox Developer · Lua Scripter</span>
+  <span style="color:var(--green)">Available for hire</span>
+</footer>
+
+<script>
+  const cursor = document.getElementById('cursor');
+  document.addEventListener('mousemove', e => {
+    cursor.style.left = e.clientX + 'px';
+    cursor.style.top = e.clientY + 'px';
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('revealed'); });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
